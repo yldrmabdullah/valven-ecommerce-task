@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>E-commerce Prototype</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css"/>
+    <style>
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    </style>
+    </head>
+<body>
+<main class="container">
+    <h1>Product Catalog</h1>
+    <div class="grid">
+        <th:block th:each="p : ${products}">
+            <article>
+                <header><strong th:text="${p.name}">Name</strong></header>
+                <p th:text="${p.description}">Description</p>
+                <footer>
+                    <small th:text="'Price: ' + ${p.price}">Price</small>
+                </footer>
+            </article>
+        </th:block>
+    </div>
+</main>
+</body>
+</html>
+
