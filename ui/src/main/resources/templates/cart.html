@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Shopping Cart - E-commerce Platform</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css"/>
+    <style>
+        .cart-item { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .cart-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .cart-item-details { display: flex; justify-content: space-between; align-items: center; }
+        .quantity-controls { display: flex; align-items: center; gap: 0.5rem; }
+        .total-section { background: #f5f5f5; padding: 1rem; border-radius: 8px; margin-top: 2rem; }
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .error { background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+        .empty-cart { text-align: center; padding: 3rem; color: #666; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <nav class="nav">
+        <h1>🛒 Shopping Cart</h1>
+        <div>
+            <a href="/" role="button">← Continue Shopping</a>
+        </div>
+    </nav>
+
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div th:if="${cart == null or cart.items == null or cart.items.empty}" class="empty-cart">
+        <h2>Your cart is empty</h2>
+        <p>Add some products to get started!</p>
+        <a href="/" role="button">Browse Products</a>
+    </div>
+
+    <div th:if="${cart != null and cart.items != null and !cart.items.empty}">
+        <div th:each="item : ${cart.items}" class="cart-item">
+            <div class="cart-item-header">
+                <h3 th:text="${item.productName}">Product Name</h3>
+                <form method="post" action="/cart/remove" style="display: inline;">
+                    <input type="hidden" name="productId" th:value="${item.productId}">
+                    <button type="submit" style="background: #ff4444; color: white; border: none; padding: 0.5rem; border-radius: 4px;">Remove</button>
+                </form>
+            </div>
+            <div class="cart-item-details">
+                <div>
+                    <span th:text="'$' + ${#numbers.formatDecimal(item.price, 1, 2)}">$99.99</span>
+                    <span> × </span>
+                    <span th:text="${item.quantity}">1</span>
+                </div>
+                <div class="quantity-controls">
+                    <form method="post" action="/cart/update" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="hidden" name="productId" th:value="${item.productId}">
+                        <label for="quantity">Qty:</label>
+                        <input type="number" id="quantity" name="quantity" th:value="${item.quantity}" min="1" style="width: 60px;">
+                        <button type="submit">Update</button>
+                    </form>
+                </div>
+                <div>
+                    <strong th:text="'$' + ${#numbers.formatDecimal(item.price * item.quantity, 1, 2)}">$99.99</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="total-section">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Total: <span th:text="'$' + ${#numbers.formatDecimal(cart.items.![price * quantity].sum(), 1, 2)}">$0.00</span></h2>
+                <div>
+                    <form method="post" action="/order/create" style="display: inline;">
+                        <button type="submit" style="background: #2e7d32; color: white; padding: 1rem 2rem; font-size: 1.1em;">Checkout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

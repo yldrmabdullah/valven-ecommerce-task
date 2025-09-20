@@ -35,7 +35,7 @@ public class CartOrderController {
 
     @GetMapping("/carts/{userId}")
     public ResponseEntity<Cart> getCart(@PathVariable("userId") String userId) {
-        return cartRepository.findByUserId(userId).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return cartRepository.findByUserId(userId).map(ResponseEntity::ok).orElse(ResponseEntity.ok(new Cart()));
     }
 
     @PostMapping("/orders")

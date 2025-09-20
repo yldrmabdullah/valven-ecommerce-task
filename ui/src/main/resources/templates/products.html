@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>E-commerce Platform</title>
+    <title>Products - E-commerce Platform</title>
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css"/>
     <style>
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
@@ -12,14 +12,11 @@
         .price { color: #2e7d32; font-weight: bold; font-size: 1.2em; }
         .stock { color: #666; font-size: 0.9em; }
         .search-bar { margin-bottom: 2rem; }
-        .search-bar input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,0.2); }
-        .search-bar input::placeholder { color: #999; }
-        .search-bar button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,123,255,0.4); }
-        .search-bar button:active { transform: translateY(0); }
         .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .cart-icon { position: relative; }
         .cart-count { position: absolute; top: -8px; right: -8px; background: #ff4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
         .error { background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+        .search-results { margin-bottom: 1rem; color: #666; }
         .quantity-input { width: 60px !important; padding: 0.5rem !important; border: 1px solid #ccc !important; border-radius: 4px !important; }
     </style>
 </head>
@@ -30,7 +27,7 @@
         <div>
             <a href="/cart" class="cart-icon" role="button">
                 🛒 Cart
-                <span class="cart-count" th:text="${cart != null ? cart.items.size() : 0}">0</span>
+                <span class="cart-count">0</span>
             </a>
         </div>
     </nav>
@@ -39,16 +36,21 @@
 
     <div class="search-bar">
         <form method="get" action="/products">
-            <div style="max-width: 800px; margin: 0 auto;">
-                <div style="gap: 0.5rem; align-items: center;">
-                    <input type="text" name="search" placeholder="Search products..." style="flex: 1; padding: 0.75rem 1rem; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px; height: 40px; background: white; color: #333;">
-                    <button type="submit" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; height: 40px; white-space: nowrap;">Search</button>
-                </div>
+            <div style="gap: 1rem; align-items: center;">
+                <input type="text" name="search" placeholder="Search products..." th:value="${search}" style="flex: 1; padding: 0.75rem; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px;">
+                <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">Search</button>
+                <a href="/products" role="button" th:if="${search != null}" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #6c757d; color: white; text-decoration: none; border-radius: 8px;">Clear</a>
             </div>
         </form>
     </div>
 
-    <h2>Featured Products</h2>
+    <div th:if="${search != null}" class="search-results">
+        <h2>Search Results for "<span th:text="${search}">search term</span>"</h2>
+    </div>
+    <div th:if="${search == null}">
+        <h2>All Products</h2>
+    </div>
+
     <div class="grid">
         <th:block th:each="p : ${products}">
             <article class="product-card">
@@ -76,9 +78,13 @@
     </div>
 
     <div th:if="${products == null or products.empty}">
-        <p>No products available. <a href="/products">Browse all products</a></p>
+        <p th:if="${search != null}">No products found for "<span th:text="${search}">search term</span>". <a href="/products">View all products</a></p>
+        <p th:if="${search == null}">No products available.</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="/" role="button">← Back to Home</a>
     </div>
 </main>
 </body>
 </html>
-

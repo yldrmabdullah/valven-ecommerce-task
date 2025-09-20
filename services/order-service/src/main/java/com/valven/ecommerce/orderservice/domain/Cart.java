@@ -16,6 +16,10 @@ public class Cart {
     @CollectionTable(name = "cart_items", joinColumns = @JoinColumn(name = "cart_id"))
     private List<CartItem> items = new ArrayList<>();
 
+    public Cart() {
+        this.items = new ArrayList<>();
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUserId() { return userId; }
