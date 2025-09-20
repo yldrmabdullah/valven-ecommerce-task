@@ -5,10 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Shopping Cart - E-commerce Platform</title>
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css"/>
+    <style>
+        .search-bar { margin-bottom: 2rem; }
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    </style>
 </head>
 <body>
 <main class="container">
-    <h1>🛒 Shopping Cart</h1>
+    <nav class="nav">
+        <h1>🛒 Shopping Cart</h1>
+        <div>
+            <a href="/" role="button">← Continue Shopping</a>
+        </div>
+    </nav>
+
+    <div class="search-bar">
+        <form method="get" action="/products">
+            <div style="gap: 1rem; align-items: center;">
+                <input type="text" name="search" placeholder="Search products..." th:value="${search}" style="flex: 1; padding: 0.75rem; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px;">
+                <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">Search</button>
+                <a href="/products" role="button" th:if="${search != null}" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #6c757d; color: white; text-decoration: none; border-radius: 8px;">Clear</a>
+            </div>
+        </form>
+    </div>
+
     <p>Your cart is empty</p>
     <a href="/" role="button">← Continue Shopping</a>
 </main>

@@ -13,6 +13,7 @@
         .stock { color: #666; font-size: 1.1em; margin: 1rem 0; }
         .add-to-cart { display: flex; gap: 1rem; align-items: center; margin: 2rem 0; }
         .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .search-bar { margin-bottom: 2rem; }
         .error { background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
         @media (max-width: 768px) {
             .product-detail { grid-template-columns: 1fr; }
@@ -29,6 +30,16 @@
     </nav>
 
     <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="search-bar">
+        <form method="get" action="/products">
+            <div style="gap: 1rem; align-items: center;">
+                <input type="text" name="search" placeholder="Search products..." th:value="${search}" style="flex: 1; padding: 0.75rem; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px;">
+                <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer;">Search</button>
+                <a href="/products" role="button" th:if="${search != null}" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #6c757d; color: white; text-decoration: none; border-radius: 8px;">Clear</a>
+            </div>
+        </form>
+    </div>
 
     <div th:if="${product != null}" class="product-detail">
         <div class="product-image">
