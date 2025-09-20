@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Orders - E-commerce Platform</title>
+    <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css"/>
+    <style>
+        .order-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .order-items { margin-top: 1rem; }
+        .order-item { border-top: 1px solid #eee; padding: 0.5rem 0; }
+        .order-item:first-child { border-top: none; }
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .error { background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
+        .empty-orders { text-align: center; padding: 3rem; color: #666; }
+        .status { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .status.processing { background: #fff3cd; color: #856404; }
+        .status.completed { background: #d4edda; color: #155724; }
+        .status.cancelled { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <nav class="nav">
+        <h1>📋 Order History</h1>
+        <div>
+            <a href="/" role="button">← Back to Home</a>
+        </div>
+    </nav>
+
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div th:if="${orders == null or orders.empty}" class="empty-orders">
+        <h2>No orders found</h2>
+        <p>You haven't placed any orders yet.</p>
+        <a href="/products" role="button">Browse Products</a>
+    </div>
+
+    <div th:if="${orders != null and !orders.empty}">
+        <h2>Your Orders</h2>
+        <div th:each="order : ${orders}" class="order-card">
+            <div class="order-header">
+                <div>
+                    <h3>Order #<span th:text="${order.id}">1</span></h3>
+                    <p>Order Date: <span th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span></p>
+                </div>
+                <div>
+                    <span class="status" th:class="'status ' + ${order.status.toLowerCase()}" th:text="${order.status}">Processing</span>
+                </div>
+            </div>
+            
+            <div class="order-items">
+                <h4>Items Ordered:</h4>
+                <div th:each="item : ${order.items}" class="order-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong th:text="${item.productName}">Product Name</strong>
+                            <span th:text="'Quantity: ' + ${item.quantity}">Quantity: 1</span>
+                        </div>
+                        <div>
+                            <span th:text="'$' + ${#numbers.formatDecimal(item.price, 1, 2)}">$99.99</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong>Total Amount:</strong>
+                    <strong th:text="'$' + ${#numbers.formatDecimal(order.totalAmount, 1, 2)}">$99.99</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

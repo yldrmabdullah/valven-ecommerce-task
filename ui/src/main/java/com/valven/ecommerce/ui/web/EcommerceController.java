@@ -9,7 +9,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -159,7 +158,17 @@ public class EcommerceController {
                 log.info("Stock reduced for product {} by quantity {}", productId, quantity);
             } catch (Exception e) {
                 log.error("Failed to reduce stock for product {}: {}", productId, e.getMessage());
-                // Don't fail the cart operation if stock reduction fails
+                // If stock reduction fails, remove the item from cart
+                try {
+                    orderClient.delete()
+                            .uri("/carts/" + userId + "/items/" + productId)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .block();
+                } catch (Exception ex) {
+                    log.error("Failed to remove item from cart after stock reduction failure: {}", ex.getMessage());
+                }
+                return "redirect:/products?error=Insufficient stock. Please try again.";
             }
             
             log.info("Product {} added to cart for user {} with quantity {}", productName, userId, quantity);
@@ -174,7 +183,10 @@ public class EcommerceController {
     }
 
     @GetMapping("/cart")
-    public String cart(@RequestParam(defaultValue = "user123") String userId, Model model) {
+    public String cart(@RequestParam(defaultValue = "user123") String userId,
+                      @RequestParam(required = false) String success,
+                      @RequestParam(required = false) String error,
+                      Model model) {
         try {
             // Order service'den sepet verilerini çek
             String cartResponse = orderClient.get()
@@ -186,6 +198,14 @@ public class EcommerceController {
             Cart cart = parseCartFromApiResponse(cartResponse);
             model.addAttribute("cart", cart);
             model.addAttribute("userId", userId);
+            
+            // Add success/error messages from URL parameters
+            if (success != null) {
+                model.addAttribute("success", success);
+            }
+            if (error != null) {
+                model.addAttribute("error", error);
+            }
         } catch (Exception e) {
             log.error("Error loading cart: {}", e.getMessage(), e);
             Cart emptyCart = new Cart();
@@ -199,8 +219,56 @@ public class EcommerceController {
     @PostMapping("/cart/remove")
     public String removeFromCart(@RequestParam Long productId, 
                                 @RequestParam(defaultValue = "user123") String userId) {
-        // Implementation for removing items
-        return "redirect:/cart";
+        try {
+            // First get the cart item to know the quantity before removing
+            String cartResponse = orderClient.get()
+                    .uri("/carts/" + userId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            Cart cart = parseCartFromApiResponse(cartResponse);
+            int quantityToRestore = 0;
+            
+            if (cart != null && cart.getItems() != null) {
+                for (CartItem item : cart.getItems()) {
+                    if (item.getProductId().equals(productId)) {
+                        quantityToRestore = item.getQuantity();
+                        break;
+                    }
+                }
+            }
+            
+            // Remove item from cart via order service
+            orderClient.delete()
+                    .uri("/carts/" + userId + "/items/" + productId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            log.info("Product {} removed from cart for user {}", productId, userId);
+            
+            // Add stock back to product service
+            if (quantityToRestore > 0) {
+                try {
+                    productClient.post()
+                            .uri("/products/" + productId + "/stock/add")
+                            .bodyValue(quantityToRestore)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .block();
+                    log.info("Stock added back for product {} with quantity {}", productId, quantityToRestore);
+                } catch (Exception e) {
+                    log.error("Failed to add stock back for product {}: {}", productId, e.getMessage());
+                }
+            }
+            
+            return "redirect:/cart?success=Product removed from cart successfully!";
+            
+        } catch (Exception e) {
+            log.error("Error removing product from cart: {}", e.getMessage(), e);
+            return "redirect:/cart?error=Failed to remove product from cart: " + e.getMessage();
+        }
     }
 
     @PostMapping("/order/create")
@@ -236,10 +304,93 @@ public class EcommerceController {
         return "redirect:/cart";
     }
 
+    @PostMapping("/cart/clear")
+    public String clearCart(@RequestParam(defaultValue = "user123") String userId) {
+        try {
+            // First get the cart to restore stock for all items
+            String cartResponse = orderClient.get()
+                    .uri("/carts/" + userId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            Cart cart = parseCartFromApiResponse(cartResponse);
+            
+            // Restore stock for all items before clearing
+            if (cart != null && cart.getItems() != null) {
+                for (CartItem item : cart.getItems()) {
+                    try {
+                        productClient.post()
+                                .uri("/products/" + item.getProductId() + "/stock/add")
+                                .bodyValue(item.getQuantity())
+                                .retrieve()
+                                .bodyToMono(String.class)
+                                .block();
+                        log.info("Stock restored for product {} with quantity {}", item.getProductId(), item.getQuantity());
+                    } catch (Exception e) {
+                        log.error("Failed to restore stock for product {}: {}", item.getProductId(), e.getMessage());
+                    }
+                }
+            }
+            
+            // Clear cart via order service
+            orderClient.delete()
+                    .uri("/carts/" + userId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            log.info("Cart cleared for user {}", userId);
+            return "redirect:/cart?success=Cart cleared successfully!";
+            
+        } catch (Exception e) {
+            log.error("Error clearing cart: {}", e.getMessage(), e);
+            return "redirect:/cart?error=Failed to clear cart: " + e.getMessage();
+        }
+    }
+
     @GetMapping("/orders")
     public String orders(@RequestParam(defaultValue = "user123") String userId, Model model) {
-        // Implementation for viewing orders
+        try {
+            // Get orders from order service
+            String response = orderClient.get()
+                    .uri("/orders?userId=" + userId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            // Parse orders from API response
+            List<Order> orders = parseOrdersFromApiResponse(response);
+            model.addAttribute("orders", orders != null ? orders : List.of());
+            model.addAttribute("userId", userId);
+        } catch (Exception e) {
+            log.error("Error loading orders: {}", e.getMessage(), e);
+            model.addAttribute("orders", List.of());
+            model.addAttribute("error", "Failed to load orders: " + e.getMessage());
+        }
         return "orders";
+    }
+
+    @GetMapping("/api/cart/count")
+    @ResponseBody
+    public int getCartCount(@RequestParam(defaultValue = "user123") String userId) {
+        try {
+            log.info("Getting cart count for user: {}", userId);
+            String cartResponse = orderClient.get()
+                    .uri("/carts/" + userId)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            log.info("Cart response: {}", cartResponse);
+            Cart cart = parseCartFromApiResponse(cartResponse);
+            int count = cart != null && cart.getItems() != null ? cart.getItems().size() : 0;
+            log.info("Cart count: {}", count);
+            return count;
+        } catch (Exception e) {
+            log.error("Error getting cart count: {}", e.getMessage(), e);
+            return 0;
+        }
     }
     
     private List<Product> parseProductsFromApiResponse(String response) {
@@ -298,6 +449,11 @@ public class EcommerceController {
             Cart cart = new Cart();
             cart.setUserId(rootNode.has("userId") ? rootNode.get("userId").asText() : "user123");
             
+            // Initialize items list if it's null
+            if (cart.getItems() == null) {
+                cart.setItems(new ArrayList<>());
+            }
+            
             if (rootNode.has("items") && rootNode.get("items").isArray()) {
                 for (JsonNode itemNode : rootNode.get("items")) {
                     CartItem item = new CartItem();
@@ -311,7 +467,43 @@ public class EcommerceController {
             return cart;
         } catch (Exception e) {
             log.error("Error parsing cart from API response: {}", e.getMessage(), e);
-            return new Cart();
+            Cart emptyCart = new Cart();
+            emptyCart.setUserId("user123");
+            emptyCart.setItems(new ArrayList<>());
+            return emptyCart;
+        }
+    }
+    
+    private List<Order> parseOrdersFromApiResponse(String response) {
+        try {
+            JsonNode rootNode = objectMapper.readTree(response);
+            List<Order> orders = new ArrayList<>();
+            
+            if (rootNode.isArray()) {
+                for (JsonNode orderNode : rootNode) {
+                    Order order = new Order();
+                    order.setId(orderNode.get("id").asLong());
+                    order.setUserId(orderNode.get("userId").asText());
+                    order.setTotalAmount(orderNode.get("totalAmount").asDouble());
+                    order.setStatus(orderNode.has("status") ? orderNode.get("status").asText() : "Processing");
+                    
+                    if (orderNode.has("items") && orderNode.get("items").isArray()) {
+                        for (JsonNode itemNode : orderNode.get("items")) {
+                            CartItem item = new CartItem();
+                            item.setProductId(itemNode.get("productId").asLong());
+                            item.setProductName(itemNode.get("productName").asText());
+                            item.setPrice(itemNode.get("price").asDouble());
+                            item.setQuantity(itemNode.get("quantity").asInt());
+                            order.getItems().add(item);
+                        }
+                    }
+                    orders.add(order);
+                }
+            }
+            return orders;
+        } catch (Exception e) {
+            log.error("Error parsing orders from API response: {}", e.getMessage(), e);
+            return new ArrayList<>();
         }
     }
 }

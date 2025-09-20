@@ -30,7 +30,14 @@
     </div>
 
     <div th:if="${cart.items != null and !cart.items.isEmpty()}">
-        <h2>Cart Items</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Cart Items</h2>
+            <form method="post" action="/cart/clear" style="display: inline;">
+                <input type="hidden" name="userId" th:value="${userId}">
+                <button type="submit" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;" 
+                        onclick="return confirm('Are you sure you want to remove all items from your cart?')">Remove All</button>
+            </form>
+        </div>
         <div th:each="item : ${cart.items}">
             <article style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
                 <header>
@@ -52,7 +59,7 @@
         <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
             <h3>Cart Summary</h3>
             <p><strong>Total Items: </strong><span th:text="${cart.items.size()}">0</span></p>
-            <p><strong>Total Amount: $</strong><span th:text="${#aggregates.sum(cart.items.![price * quantity])}">0.00</span></p>
+            <p><strong>Total Amount: $</strong><span th:text="${#numbers.formatDecimal(cart.items.![price * quantity].sum(), 1, 2)}">0.00</span></p>
             <form method="post" action="/order/create" style="margin-top: 1rem;">
                 <input type="hidden" name="userId" th:value="${userId}">
                 <button type="submit" style="background: #28a745; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; cursor: pointer; font-size: 1.1rem;">Proceed to Checkout</button>
@@ -65,9 +72,37 @@
         <a href="/" role="button">← Continue Shopping</a>
     </div>
     
-    <div th:if="${error}" style="background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+    <div th:if="${error}" class="error-message" style="background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
         <p th:text="${error}">Error message</p>
     </div>
+    
+    <div th:if="${success}" class="success-message" style="background: #e8f5e8; color: #2e7d32; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <p th:text="${success}">Success message</p>
+    </div>
 </main>
+
+<script>
+    // Auto-hide notifications after 3 seconds
+    setTimeout(function() {
+        const errorMessages = document.querySelectorAll('.error-message');
+        const successMessages = document.querySelectorAll('.success-message');
+        
+        errorMessages.forEach(function(msg) {
+            msg.style.transition = 'opacity 0.5s';
+            msg.style.opacity = '0';
+            setTimeout(function() {
+                msg.remove();
+            }, 500);
+        });
+        
+        successMessages.forEach(function(msg) {
+            msg.style.transition = 'opacity 0.5s';
+            msg.style.opacity = '0';
+            setTimeout(function() {
+                msg.remove();
+            }, 500);
+        });
+    }, 3000);
+</script>
 </body>
 </html>

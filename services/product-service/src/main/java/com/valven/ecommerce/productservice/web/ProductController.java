@@ -85,7 +85,7 @@ public class ProductController {
     @PostMapping("/{id}/stock/reduce")
     public ResponseEntity<ApiResponse<Void>> reduceStock(
             @PathVariable Long id, 
-            @RequestParam int quantity) {
+            @RequestBody int quantity) {
         log.info("Reducing stock for product {} by quantity {}", id, quantity);
         productService.reduceStock(id, quantity);
         return ResponseEntity.ok(ApiResponse.success("Stock reduced successfully", null));
@@ -94,7 +94,7 @@ public class ProductController {
     @PostMapping("/{id}/stock/add")
     public ResponseEntity<ApiResponse<Void>> addStock(
             @PathVariable Long id, 
-            @RequestParam int quantity) {
+            @RequestBody int quantity) {
         log.info("Adding stock for product {} by quantity {}", id, quantity);
         productService.addStock(id, quantity);
         return ResponseEntity.ok(ApiResponse.success("Stock added successfully", null));

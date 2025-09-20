@@ -38,10 +38,36 @@ public class CartOrderController {
         return cartRepository.findByUserId(userId).map(ResponseEntity::ok).orElse(ResponseEntity.ok(new Cart()));
     }
 
+    @DeleteMapping("/carts/{userId}/items/{productId}")
+    public ResponseEntity<Cart> removeItem(@PathVariable("userId") String userId, @PathVariable("productId") Long productId) {
+        Cart cart = cartRepository.findByUserId(userId).orElse(null);
+        if (cart != null) {
+            cart.getItems().removeIf(item -> item.getProductId().equals(productId));
+            cart = cartRepository.save(cart);
+        }
+        return ResponseEntity.ok(cart != null ? cart : new Cart());
+    }
+
+    @DeleteMapping("/carts/{userId}")
+    public ResponseEntity<Cart> clearCart(@PathVariable("userId") String userId) {
+        Cart cart = cartRepository.findByUserId(userId).orElse(null);
+        if (cart != null) {
+            cart.getItems().clear();
+            cart = cartRepository.save(cart);
+        }
+        return ResponseEntity.ok(cart != null ? cart : new Cart());
+    }
+
     @PostMapping("/orders")
     public ResponseEntity<Order> createOrder(@RequestBody Order order) {
         Order saved = orderRepository.save(order);
         return ResponseEntity.created(URI.create("/api/orders/" + saved.getId())).body(saved);
+    }
+
+    @GetMapping("/orders")
+    public ResponseEntity<java.util.List<Order>> getAllOrders(@RequestParam(defaultValue = "user123") String userId) {
+        java.util.List<Order> orders = orderRepository.findByUserId(userId);
+        return ResponseEntity.ok(orders);
     }
 }
 

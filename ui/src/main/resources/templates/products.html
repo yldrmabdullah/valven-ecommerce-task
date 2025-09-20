@@ -32,7 +32,7 @@
         <div>
             <a href="/cart" class="cart-icon" role="button">
                 🛒 Cart
-                <span class="cart-count">0</span>
+                <span class="cart-count" id="cartCount">0</span>
             </a>
         </div>
     </nav>
@@ -102,5 +102,112 @@
         <a href="/" role="button">← Back to Home</a>
     </div>
 </main>
+
+<script>
+    // Auto-hide notifications after 3 seconds
+    setTimeout(function() {
+        const errorMessages = document.querySelectorAll('.error');
+        const successMessages = document.querySelectorAll('.success');
+        
+        errorMessages.forEach(function(msg) {
+            msg.style.transition = 'opacity 0.5s';
+            msg.style.opacity = '0';
+            setTimeout(function() {
+                msg.remove();
+            }, 500);
+        });
+        
+        successMessages.forEach(function(msg) {
+            msg.style.transition = 'opacity 0.5s';
+            msg.style.opacity = '0';
+            setTimeout(function() {
+                msg.remove();
+            }, 500);
+        });
+    }, 3000);
+
+    // Update cart count when page loads
+    function updateCartCount() {
+        fetch('/api/cart/count?userId=user123')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(count => {
+                console.log('Cart count received:', count);
+                document.getElementById('cartCount').textContent = count;
+            })
+            .catch(error => {
+                console.error('Error updating cart count:', error);
+                // Fallback: try to get count from cart page
+                fetch('/cart?userId=user123')
+                    .then(response => response.text())
+                    .then(html => {
+                        // Simple regex to extract cart count from HTML
+                        const match = html.match(/Total Items:.*?(\d+)/);
+                        if (match) {
+                            document.getElementById('cartCount').textContent = match[1];
+                        }
+                    })
+                    .catch(fallbackError => {
+                        console.error('Fallback cart count failed:', fallbackError);
+                    });
+            });
+    }
+
+    // Update cart count on page load
+    updateCartCount();
+
+    // Update cart count when forms are submitted
+    document.addEventListener('submit', function(e) {
+        if (e.target.action && e.target.action.includes('/cart/add')) {
+            // Show loading state
+            document.getElementById('cartCount').textContent = '...';
+            
+            // Update stock display after adding to cart
+            const form = e.target;
+            const productId = form.querySelector('input[name="productId"]').value;
+            const quantity = parseInt(form.querySelector('input[name="quantity"]').value);
+            
+            // Update stock display optimistically
+            updateStockDisplay(productId, quantity);
+            
+            setTimeout(updateCartCount, 2000); // Update after a longer delay
+        }
+    });
+
+    // Function to update stock display
+    function updateStockDisplay(productId, quantity) {
+        // Find the product card by looking for the product ID in the form
+        const forms = document.querySelectorAll('form[action="/cart/add"]');
+        forms.forEach(form => {
+            const formProductId = form.querySelector('input[name="productId"]').value;
+            if (formProductId === productId) {
+                const stockElement = form.closest('.product-card').querySelector('.stock');
+                if (stockElement) {
+                    const currentStockText = stockElement.textContent;
+                    const match = currentStockText.match(/In Stock \((\d+) available\)/);
+                    if (match) {
+                        const currentStock = parseInt(match[1]);
+                        const newStock = Math.max(0, currentStock - quantity);
+                        if (newStock > 0) {
+                            stockElement.textContent = `In Stock (${newStock} available)`;
+                        } else {
+                            stockElement.textContent = 'Out of Stock';
+                            stockElement.className = 'stock out-of-stock';
+                            const addButton = form.querySelector('button[type="submit"]');
+                            if (addButton) {
+                                addButton.disabled = true;
+                                addButton.textContent = 'Out of Stock';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
 </body>
 </html>
