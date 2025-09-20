@@ -29,8 +29,45 @@
         </form>
     </div>
 
-    <p>Your cart is empty</p>
-    <a href="/" role="button">← Continue Shopping</a>
+    <div th:if="${cart.items != null and !cart.items.isEmpty()}">
+        <h2>Cart Items</h2>
+        <div th:each="item : ${cart.items}">
+            <article style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                <header>
+                    <strong th:text="${item.productName}">Product Name</strong>
+                </header>
+                <p>Price: $<span th:text="${item.price}">0.00</span></p>
+                <p>Quantity: <span th:text="${item.quantity}">1</span></p>
+                <p>Total: $<span th:text="${item.price * item.quantity}">0.00</span></p>
+                <footer>
+                    <form method="post" action="/cart/remove" style="display: inline;">
+                        <input type="hidden" name="productId" th:value="${item.productId}">
+                        <input type="hidden" name="userId" th:value="${userId}">
+                        <button type="submit" style="background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Remove</button>
+                    </form>
+                </footer>
+            </article>
+        </div>
+        
+        <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <h3>Cart Summary</h3>
+            <p><strong>Total Items: </strong><span th:text="${cart.items.size()}">0</span></p>
+            <p><strong>Total Amount: $</strong><span th:text="${#aggregates.sum(cart.items.![price * quantity])}">0.00</span></p>
+            <form method="post" action="/order/create" style="margin-top: 1rem;">
+                <input type="hidden" name="userId" th:value="${userId}">
+                <button type="submit" style="background: #28a745; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; cursor: pointer; font-size: 1.1rem;">Proceed to Checkout</button>
+            </form>
+        </div>
+    </div>
+    
+    <div th:if="${cart.items == null or cart.items.isEmpty()}">
+        <p>Your cart is empty</p>
+        <a href="/" role="button">← Continue Shopping</a>
+    </div>
+    
+    <div th:if="${error}" style="background: #ffebee; color: #c62828; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <p th:text="${error}">Error message</p>
+    </div>
 </main>
 </body>
 </html>
