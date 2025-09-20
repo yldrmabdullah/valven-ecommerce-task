@@ -9,6 +9,7 @@
     <name>ecommerce-platform</name>
     <description>Microservices for e-commerce platform</description>
     <modules>
+        <module>services/user-service</module>
         <module>services/product-service</module>
         <module>services/order-service</module>
         <module>gateway</module>

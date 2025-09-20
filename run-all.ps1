@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Get-Location
 
+Start-Process -WindowStyle Minimized -WorkingDirectory "$root\services\user-service" -FilePath "$root\mvnw.cmd" -ArgumentList "-q spring-boot:run"
 Start-Process -WindowStyle Minimized -WorkingDirectory "$root\services\product-service" -FilePath "$root\mvnw.cmd" -ArgumentList "-q spring-boot:run"
 Start-Process -WindowStyle Minimized -WorkingDirectory "$root\services\order-service" -FilePath "$root\mvnw.cmd" -ArgumentList "-q spring-boot:run"
 Start-Process -WindowStyle Minimized -WorkingDirectory "$root\gateway" -FilePath "$root\mvnw.cmd" -ArgumentList "-q spring-boot:run"

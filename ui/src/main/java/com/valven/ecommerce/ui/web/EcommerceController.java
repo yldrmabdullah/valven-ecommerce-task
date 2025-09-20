@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -34,7 +35,13 @@ public class EcommerceController {
     }
 
     @GetMapping("/")
-    public String home(Model model) {
+    public String home(HttpSession session, Model model) {
+        // Check if user is authenticated
+        String token = (String) session.getAttribute("token");
+        if (token == null) {
+            return "redirect:/auth/login";
+        }
+
         try {
             // API'den ApiResponse<Product[]> formatında veri geliyor
             String response = productClient.get()
@@ -46,6 +53,10 @@ public class EcommerceController {
             // JSON parse etmek için basit bir yaklaşım
             List<Product> products = parseProductsFromApiResponse(response);
             model.addAttribute("products", products != null ? products : List.of());
+            
+            // Add user info to model
+            model.addAttribute("userName", session.getAttribute("userName"));
+            model.addAttribute("userEmail", session.getAttribute("userEmail"));
         } catch (Exception e) {
             log.error("Error loading products: {}", e.getMessage(), e);
             model.addAttribute("products", List.of());
@@ -58,7 +69,13 @@ public class EcommerceController {
     public String products(@RequestParam(required = false) String search,
                           @RequestParam(required = false) String success,
                           @RequestParam(required = false) String error,
+                          HttpSession session,
                           Model model) {
+        // Check if user is authenticated
+        String token = (String) session.getAttribute("token");
+        if (token == null) {
+            return "redirect:/auth/login";
+        }
         try {
             String uri = search != null ? "/products?q=" + search : "/products";
             String response = productClient.get()
